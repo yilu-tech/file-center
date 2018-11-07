@@ -6,9 +6,9 @@ use OSS\OssClient;
 use League\Flysystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\ServiceProvider;
-use YiluTech\FileUpload\AliyunOss\Plugins\PutFile;
-use YiluTech\FileUpload\AliyunOss\Plugins\SignedDownloadUrl;
-use YiluTech\FileUpload\AliyunOss\Plugins\PutContent;
+use YiluTech\FileCenter\AliyunOss\Plugins\PutFile;
+use YiluTech\FileCenter\AliyunOss\Plugins\SignedDownloadUrl;
+use YiluTech\FileCenter\AliyunOss\Plugins\PutContent;
 
 /**
  * Aliyun Oss ServiceProvider class.
