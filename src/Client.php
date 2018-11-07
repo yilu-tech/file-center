@@ -6,8 +6,6 @@ use YiluTech\MicroApi\MicroApi;
 
 class Client
 {
-    use PathPrefixSupportTrait;
-
     protected $history = array();
 
     protected $prepared = false;
@@ -16,18 +14,39 @@ class Client
 
     protected $bucket;
 
-    /**
-     * Client constructor.
-     *
-     * @param $instance
-     * @param null $bucket
-     */
+    protected $prefix;
 
-    public function __construct($instance, $bucket = null)
+    public function __construct($bucket = null)
     {
-        $this->setPathPrefix($instance);
-
         $this->bucket = $bucket ?? env('FILE_BUCKET');
+    }
+
+    public function bucket($bucket = null)
+    {
+        return new self($bucket);
+    }
+
+    public function setPrefix($prefix)
+    {
+        $prefix = (string)$prefix;
+
+        $this->prefix = $prefix === '' ? null : rtrim($prefix, '\\/') . '/';
+
+        return $this;
+    }
+
+    public function getPrefix()
+    {
+        return $this->prefix;
+    }
+
+    public function applyPrefix($path)
+    {
+        if (strpos('\\/', $path) === false) {
+            return $this->getPrefix() . $path;
+        }
+
+        return $path;
     }
 
     /**
@@ -46,7 +65,7 @@ class Client
             [$to === null ? $from : ['from' => $from, 'to' => $to]];
 
         $result = array_map(function ($item) {
-            return $this->applyPathPrefix(is_array($item) ? $item['to'] : basename($item));
+            return $this->applyPrefix(is_array($item) ? $item['to'] : basename($item));
         }, $items);
 
         if ($this->prepared) {
@@ -59,7 +78,7 @@ class Client
 
                 $this->record('move', array_map(function ($item) {
                     return is_array($item) ? ['from' => $item['to'], 'to' => $item['from']] :
-                        ['from' => $this->applyPathPrefix(basename($item)), 'to' => $item];
+                        ['from' => $this->applyPrefix(basename($item)), 'to' => $item];
                 }, $items));
 
             } else {
@@ -137,6 +156,8 @@ class Client
         $this->history = [];
 
         $this->prepared = true;
+
+        return $this;
     }
 
     /**
@@ -198,7 +219,7 @@ class Client
         $result = $api->post($action)->json([
             'paths' => $paths,
             'bucket' => $this->bucket,
-            'instance' => rtrim($this->pathPrefix, '/')
+            'instance' => rtrim($this->prefix, '/')
         ])->run()->getContents();
 
         return $result === 'success';

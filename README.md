@@ -1,4 +1,4 @@
-# Yilu-Tech file-upload
+# Yilu-Tech file-center
 
 文件管理服务
 
@@ -9,7 +9,7 @@
         "repositories": [
             {
                 "type": "git",
-                "url": "git@share-git.yilu.works:yilu-tech/file-upload.git"
+                "url": "git@share-git.yilu.works:yilu-tech/file-center.git"
             },
             {
                 "type": "git",
@@ -22,8 +22,12 @@
         composer require yilu-tech/file-center
 
 #### 注册provider
-    
+        // 服务端 route provider
         YiluTech\FileUpload\FileRouteServiceProvider::class
+        
+        // 内网客户端 client provider, 使用 facade 需注入 
+        YiluTech\FileUpload\FileRouteServiceProvider::class
+        
         // 如果使用 OSS 
         YiluTech\FileUpload\AliyunOss\AliyunOssServiceProvider::class
 
@@ -88,20 +92,18 @@
         
 #### 内网客户端
         
-        $client = new client($instance);
-        
         try {
             \DB::beginTransaction();
-            $client->prepare();
+            \FileCenterClient::setPrefix($instance)->prepare(); 
             
             \DB::table('xx')->insert([...]);
-            $client->move('$temp/2018-01-01/xxx.png');
-            $client->delete('xxx.png');
+            \FileCenterClient::move('$temp/2018-01-01/xxx.png');
+            \FileCenterClient::delete('xxx.png');
             
-            $client->commit();  //  在数据库之前 commit
+            \FileCenterClient::commit();  //  在数据库之前 commit
             \DB::commit();
         
         } cache(\Exception $exception) {
             \DB::rollback();
-            $client->rollback();  //  在数据库之后 rollback
+            \FileCenterClient::rollback();  //  在数据库之后 rollback
         }
