@@ -1,6 +1,6 @@
 <?php
 
-namespace YiluTech\FileUpload\AliyunOss;
+namespace YiluTech\FileCenter\AliyunOss;
 
 use OSS\OssClient;
 use OSS\Core\OssException;

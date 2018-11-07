@@ -1,6 +1,6 @@
 # Yilu-Tech file-upload
 
-文件 上传, 管理 服务
+文件管理服务
 
 ## 安装
 
@@ -19,7 +19,7 @@
 
 #### 安装包
 
-        composer require yilu-tech/file-upload
+        composer require yilu-tech/file-center
 
 #### 注册provider
     
@@ -41,7 +41,7 @@
 
 #### 内网客户端配置
 
-        // env.ts
+        // .env
         FILE_BUCKET=$bucket
 
 ## 实例
@@ -98,10 +98,10 @@
             $client->move('$temp/2018-01-01/xxx.png');
             $client->delete('xxx.png');
             
-            $client->commit();
+            $client->commit();  //  在数据库之前 commit
             \DB::commit();
         
         } cache(\Exception $exception) {
-            \DB::roleback();
-            $client->roleback();
+            \DB::rollback();
+            $client->rollback();  //  在数据库之后 rollback
         }

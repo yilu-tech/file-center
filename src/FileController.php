@@ -1,6 +1,6 @@
 <?php
 
-namespace YiluTech\FileUpload;
+namespace YiluTech\FileCenter;
 
 use Illuminate\Http\Request;
 use Laravel\Lumen\Routing\Controller as BaseController;

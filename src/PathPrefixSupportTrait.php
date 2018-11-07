@@ -1,6 +1,6 @@
 <?php
 
-namespace YiluTech\FileUpload;
+namespace YiluTech\FileCenter;
 
 trait PathPrefixSupportTrait
 {

@@ -1,6 +1,6 @@
 <?php
 
-namespace YiluTech\FileUpload\AliyunOss\Plugins;
+namespace YiluTech\FileCenter\AliyunOss\Plugins;
 
 use League\Flysystem\Plugin\AbstractPlugin;
 

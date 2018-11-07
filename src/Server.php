@@ -1,6 +1,6 @@
 <?php
 
-namespace YiluTech\FileUpload;
+namespace YiluTech\FileCenter;
 
 use Carbon\Carbon;
 use Illuminate\Contracts\Filesystem\Filesystem;

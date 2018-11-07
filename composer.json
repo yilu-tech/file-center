@@ -1,5 +1,5 @@
 {
-    "name": "yilu-tech/file-upload",
+    "name": "yilu-tech/file-center",
     "description": "filesystem",
     "license": "MIT",
     "type": "library",
@@ -17,7 +17,7 @@
     },
     "autoload": {
         "psr-4": {
-            "YiluTech\\FileUpload\\": "src/"
+            "YiluTech\\FileCenter\\": "src/"
         }
     }
 }
