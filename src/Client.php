@@ -26,6 +26,13 @@ class Client
         return new self($bucket);
     }
 
+    public function setBucket($bucket)
+    {
+        $this->bucket = $bucket;
+
+        return $this;
+    }
+
     public function setPrefix($prefix)
     {
         $prefix = (string)$prefix;
