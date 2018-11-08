@@ -23,13 +23,13 @@
 
 #### 注册provider
         // 服务端 route provider
-        YiluTech\FileUpload\FileRouteServiceProvider::class
+        YiluTech\FileCenter\FileRouteServiceProvider::class
         
         // 内网客户端 client provider, 使用 facade 需注入 
-        YiluTech\FileUpload\FileRouteServiceProvider::class
+        YiluTech\FileCenter\FileRouteServiceProvider::class
         
         // 如果使用 OSS 
-        YiluTech\FileUpload\AliyunOss\AliyunOssServiceProvider::class
+        YiluTech\FileCenter\AliyunOss\AliyunOssServiceProvider::class
 
 #### 服务端配置
         
