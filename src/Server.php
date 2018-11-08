@@ -3,7 +3,7 @@
 namespace YiluTech\FileCenter;
 
 use Carbon\Carbon;
-use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -14,37 +14,49 @@ use Illuminate\Support\Str;
  *      $recycled/      回收站
  *      {system-dir}/   系统目录
  *
- *      {instance}/     用户目录
+ *      {user}/     用户目录
  */
 
 class Server
 {
     protected $root;
 
+    protected $prefix;
+
     protected $paths = array();
 
     /**
-     * @var Filesystem
+     * @var FilesystemAdapter
      */
     protected $driver;
 
-    public function __construct($bucket, $root = null)
+    public function __construct($bucket, $prefix = null)
     {
         $config = config('filesystems.buckets.' . $bucket);
 
         if (!$config) throw new \Exception("bucket \"$bucket\" not exists");
 
-        if (empty($config['disk']))
+        if (empty($config['disk'])) {
             throw new \Exception("bucket \"$bucket\" disk not defined");
+        }
 
-        $disk = $config['disk'];
+        if (isset($config['root'])) {
+            $this->root = rtrim($config['root'], '\\/') . '/';
+        }
 
-        if (isset($config['prefix']))
-            app('config')->set("filesystems.disks.$disk.prefix", $config['prefix']);
+        $this->prefix($prefix);
 
-        $this->driver = Storage::disk($disk);
+        $this->driver = Storage::disk($config['disk']);
+    }
 
-        if ($root) $this->root = rtrim($root, '\\/') . '/';
+    public function prefix($prefix)
+    {
+        if (!$prefix) {
+            $this->prefix = '';
+            return;
+        }
+
+        $this->prefix = rtrim($prefix, '\\/') . '/';
     }
 
     /**
@@ -87,11 +99,12 @@ class Server
      */
     public function storeAs($file, $name, $dir = null)
     {
-        $dir = $dir ? trim($dir, ' /') : $this->root;
+        $path = $this->driver->putFileAs($this->applyPrefix($dir), $file, $name);
 
-        $path = $this->driver->putFileAs($dir, $file, $name);
-
-        $this->paths[] = $this->path($name, $dir);
+        if ($path) {
+            $this->paths[] = $path;
+            $path = $this->removeRoot($path);
+        }
 
         return $path;
     }
@@ -153,7 +166,7 @@ class Server
 
         $filename = $name ?? $this->makeFileName(null, 'png');
 
-        $path = $dir ? $dir . '/' . $filename : $this->path($filename);
+        $path = $this->applyPrefix($dir ? $dir . '/' . $filename : $filename);
 
         $fp = fopen("php://memory", 'r+');
 
@@ -163,14 +176,14 @@ class Server
 
         rewind($fp);
 
-        $bool = $this->driver->putContent($path, stream_get_contents($fp));
+        $bool = $this->driver->put($path, stream_get_contents($fp));
 
         fclose($fp);
 
         if ($bool) {
             $this->paths[] = $path;
         }
-        return $bool ? $path : false;
+        return $bool ? $this->removeRoot($path) : false;
     }
 
     /**
@@ -195,12 +208,12 @@ class Server
      */
     public function move($from, $to = null)
     {
-        if (!$to) $to = basename($from);
+        $to = $this->applyPrefix($to ?? basename($from));
 
+        $from = $this->applyPrefix($from);
+app('log')->debug($from);
+app('log')->debug($to);
         if ($from === $to) return true;
-
-        if (dirname($from) === '.') $from = $this->path($from);
-        if (dirname($to) === '.') $to = $this->path($to);
 
         $result = $this->driver->move($from, $to);
 
@@ -226,10 +239,10 @@ class Server
         foreach ($paths as $path) {
             try {
                 if ($this->isRecycledFile($path)) {
-                    if (!$this->driver->delete($path)) {
+                    if (!$this->destroy($path)) {
                         $success = false;
                     }
-                } elseif (!$this->move($path, '$recycled/' . $this->encodeRecyclePath($path))) {
+                } elseif (!$this->move($path, $this->encodeRecyclePath($path))) {
                     $success = false;
                 }
             } catch (\Exception $e) {
@@ -248,18 +261,32 @@ class Server
      */
     public function recovery($name)
     {
-        return $this->move('$recycled/' . $name, $this->decodeRecyclePath($name));
+        $form = $this->applyRoot('$recycled/' . $name);
+
+        $to = $this->applyRoot($this->decodeRecyclePath($name));
+
+        $bool = $this->driver->move($form, $to);
+
+        if ($bool) {
+            $this->paths[] = ['from' => $form, 'to' => $to];
+        }
+        
+        return $bool;
     }
 
     /**
      * 销毁文件
      *
-     * @param $paths
+     * @param $path
      * @return bool
      */
-    public function destroy($paths)
+    public function destroy($path)
     {
-        return $this->driver->delete($paths);
+        $path = is_array($path) ? $path : func_get_args();
+
+        return $this->driver->delete(array_map(function ($path) {
+            return $this->applyPrefix($path);
+        }, $path));
     }
 
     /**
@@ -306,7 +333,7 @@ class Server
      */
     public function isRecycledFile($path)
     {
-        return preg_match('/\\$recycled\\//', $path);
+        return preg_match('/\\$recycled\\/#/', $path);
     }
 
     /**
@@ -371,17 +398,32 @@ class Server
 
     protected function encodeRecyclePath($path)
     {
-        $path = str_replace('/', '#', $path);
+        $path = str_replace('/', '#', $this->applyPrefix($path, false));
 
-        if ($path{0} !== '#') {
-            $path = '#' . $path;
-        }
-
-        return $path;
+        return '$recycled/#' . $path;
     }
 
     protected function decodeRecyclePath($name)
     {
         return substr(str_replace('#', '/', $name), 1);
+    }
+
+    protected function applyPrefix($path, $with_root = true)
+    {
+        if ($path{0} !== '$') {
+            $path = $this->prefix . ltrim($path, '\\/');
+        }
+
+        return $with_root ? $this->applyRoot($path) : $path;
+    }
+
+    protected function applyRoot($path)
+    {
+        return $this->root . ltrim($path, '\\/');
+    }
+
+    protected function removeRoot($path)
+    {
+        return substr($path, strlen($this->root));
     }
 }

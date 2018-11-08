@@ -19,7 +19,7 @@ class PutContent extends AbstractPlugin
      */
     public function getMethod()
     {
-        return 'putContent';
+        return 'put';
     }
 
     /**

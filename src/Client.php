@@ -16,9 +16,15 @@ class Client
 
     protected $prefix;
 
+    protected $uriPrefix;
+
     public function __construct($bucket = null)
     {
         $this->bucket = $bucket ?? env('FILE_BUCKET');
+
+        $uri_prefix = env('FILE_URI_FREFIX');
+
+        $this->uriPrefix = $uri_prefix ? rtrim($uri_prefix, '\\/') . '/' : '';
     }
 
     public function bucket($bucket = null)
@@ -33,11 +39,9 @@ class Client
         return $this;
     }
 
-    public function setPrefix($prefix)
+    public function prefix($prefix)
     {
-        $prefix = (string)$prefix;
-
-        $this->prefix = $prefix === '' ? null : rtrim($prefix, '\\/') . '/';
+        $this->prefix = (string)$prefix ? rtrim($prefix, '\\/') . '/' : '';
 
         return $this;
     }
@@ -49,8 +53,8 @@ class Client
 
     public function applyPrefix($path)
     {
-        if (strpos('\\/', $path) === false) {
-            return $this->getPrefix() . $path;
+        if ($path{0} !== '$') {
+            $path = $this->prefix . ltrim($path, '\\/');
         }
 
         return $path;
@@ -71,29 +75,27 @@ class Client
         $items = is_array($from) ? $from :
             [$to === null ? $from : ['from' => $from, 'to' => $to]];
 
-        $result = array_map(function ($item) {
-            return $this->applyPrefix(is_array($item) ? $item['to'] : basename($item));
-        }, $items);
-
         if ($this->prepared) {
-
             $this->queue['move'][] = $items;
-
-        } else {
-
-            if ($this->exec('move', $items)) {
-
-                $this->record('move', array_map(function ($item) {
-                    return is_array($item) ? ['from' => $item['to'], 'to' => $item['from']] :
-                        ['from' => $this->applyPrefix(basename($item)), 'to' => $item];
-                }, $items));
-
-            } else {
-                $result = false;
-            }
+            return true;
         }
 
-        return $result;
+        $items = array_map(function ($item) {
+            return [
+                'from' => $this->applyPrefix(is_array($item) ? $item['from'] : $item),
+                'to' => $this->applyPrefix(is_array($item) ? $item['to'] : basename($item))
+            ];
+        }, $items);
+
+        if (!$this->exec('move', $items)) {
+            return false;
+        }
+
+        $this->record('move', array_map(function ($item) {
+            return ['from' => $item['to'], 'to' => $item['from']];
+        }, $items));
+
+        return true;
     }
 
     /**
@@ -106,23 +108,24 @@ class Client
     {
         $paths = is_array($path) ? $path : func_get_args();
 
-        $result = true;
         if ($this->prepared) {
-
             $this->queue['delete'][] = $paths;
-
-        } else {
-
-            if ($this->exec('delete', $paths)) {
-                $this->record('recover', array_map(function ($path) {
-                    return $this->encodeRecyclePath($path);
-                }, $paths));
-            } else {
-                $result = false;
-            }
+            return true;
         }
 
-        return $result;
+        $paths = array_map(function ($path) {
+            return $this->applyPrefix($path);
+        }, $paths);
+
+        if (!$this->exec('delete', $paths)) {
+            return false;
+        }
+
+        $this->record('recover', array_map(function ($path) {
+            return $this->encodeRecyclePath($path);
+        }, $paths));
+
+        return true;
     }
 
     /**
@@ -135,23 +138,20 @@ class Client
     {
         $paths = is_array($path) ? $path : func_get_args();
 
-        $result = true;
         if ($this->prepared) {
-
             $this->queue['recover'][] = $paths;
-
-        } else {
-
-            if ($this->exec('recover', $paths)) {
-                $this->record('delete', array_map(function ($path) {
-                    return $this->decodeRecyclePath($path);
-                }, $paths));
-            } else {
-                $result = false;
-            }
+            return true;
         }
 
-        return $result;
+        if (!$this->exec('recover', $paths)) {
+            return false;
+        }
+
+        $this->record('delete', array_map(function ($path) {
+            return $this->decodeRecyclePath($path);
+        }, $paths));
+
+        return true;
     }
 
     /**
@@ -206,9 +206,7 @@ class Client
         }
 
         foreach ($this->history as $fun => $paths) {
-            if (!$this->{$fun}($paths)) {
-                break;
-            }
+            $this->exec($fun, $paths);
         }
 
         $this->history = [];
@@ -223,10 +221,9 @@ class Client
     {
         $api = new MicroApi();
 
-        $result = $api->post($action)->json([
+        $result = $api->post($this->uriPrefix . $action)->json([
             'paths' => $paths,
-            'bucket' => $this->bucket,
-            'instance' => rtrim($this->prefix, '/')
+            'bucket' => $this->bucket
         ])->run()->getContents();
 
         return $result === 'success';

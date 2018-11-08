@@ -39,7 +39,7 @@
         "buckets" => [
             $bucket => [            // $bucket bucket名称
                 "disk" => "oss",    // 磁盘驱动
-                "prefix" => "dev"   // 目录前缀
+                "root" => "dev"     // root目录
             } ...
         ]
 
@@ -47,6 +47,7 @@
 
         // .env
         FILE_BUCKET=$bucket
+        FILE_URI_PREFIX=    // 链接前缀
 
 ## 实例
 
@@ -70,12 +71,11 @@
                     'images.*' => 'file|max:2048'
                 ];
             }
-            $rules['instance'] = 'required';                    // instance 关联账户目录
             $rules['bucket'] = 'required|string|max:16';        // bucket
     
             $this->validate($request, $rules);
     
-            $server = new Server($request->input('bucket'), $request->input('instance')); // 初始实例
+            $server = new Server($request->input('bucket')); // 初始实例
     
             $is_temp = (int)$request->input('temp', 1);     // 判断是否存到暂存目录，默认开启
     
@@ -94,7 +94,7 @@
         
         try {
             \DB::beginTransaction();
-            \FileCenterClient::setPrefix($instance)->prepare(); 
+            \FileCenterClient::prefix($prefix)->prepare(); 
             
             \DB::table('xx')->insert([...]);
             \FileCenterClient::move('$temp/2018-01-01/xxx.png');
