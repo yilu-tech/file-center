@@ -211,8 +211,7 @@ class Server
         $to = $this->applyPrefix($to ?? basename($from));
 
         $from = $this->applyPrefix($from);
-app('log')->debug($from);
-app('log')->debug($to);
+        
         if ($from === $to) return true;
 
         $result = $this->driver->move($from, $to);
