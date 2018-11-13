@@ -53,7 +53,7 @@ class Client
 
     public function applyPrefix($path)
     {
-        if ($path{0} !== '$') {
+        if ($path{0} !== '.') {
             $path = $this->prefix . ltrim($path, '\\/');
         }
 

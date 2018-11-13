@@ -10,8 +10,8 @@ use Illuminate\Support\Str;
 /*
  * root bucket + ?prefix
  *
- *      $temp/{Y-m-d}/  暂存文件目录
- *      $recycled/      回收站
+ *      .temp/{Y-m-d}/  暂存文件目录
+ *      .recycled/      回收站
  *      {system-dir}/   系统目录
  *
  *      {user}/     用户目录
@@ -57,24 +57,6 @@ class Server
         }
 
         $this->prefix = rtrim($prefix, '\\/') . '/';
-    }
-
-    /**
-     * 获取文件路径
-     *
-     * @param $name
-     * @param null $dir
-     * @return string
-     */
-    public function path($name, $dir = null)
-    {
-        if (!$dir || $dir === '.') {
-            $dir = $this->root;
-        }
-        if ($dir && $dir !== '.') {
-            return $dir . '/' . $name;
-        }
-        return $name;
     }
 
     /**
@@ -260,7 +242,7 @@ class Server
      */
     public function recovery($name)
     {
-        $form = $this->applyRoot('$recycled/' . $name);
+        $form = $this->applyRoot('.recycled/' . $name);
 
         $to = $this->applyRoot($this->decodeRecyclePath($name));
 
@@ -321,7 +303,7 @@ class Server
      */
     public function isTempFile($path)
     {
-        return preg_match('/\\$temp\\/\\d{4}-\\d{2}-\\d{2}\\//', $path);
+        return preg_match('/\\.temp\\/\\d{4}-\\d{2}-\\d{2}\\//', $path);
     }
 
     /**
@@ -332,7 +314,7 @@ class Server
      */
     public function isRecycledFile($path)
     {
-        return preg_match('/\\$recycled\\/#/', $path);
+        return preg_match('/\\.recycled\\/#/', $path);
     }
 
     /**
@@ -363,7 +345,7 @@ class Server
      */
     public function clearRecycle()
     {
-        return $this->driver->deleteDir('$recycled');
+        return $this->driver->deleteDir('.recycled');
     }
 
     /**
@@ -377,7 +359,7 @@ class Server
 
         $result = false;
 
-        while ($this->driver->deleteDir('$temp/' . $date)->format('Y-m-d')) {
+        while ($this->driver->deleteDir('.temp/' . $date)->format('Y-m-d')) {
             $date = $date->previousWeekendDay();
             $result = true;
         }
@@ -392,14 +374,14 @@ class Server
 
     protected function getTempDir()
     {
-        return '$temp/' . Carbon::now()->previousWeekendDay()->format('Y-m-d');
+        return '.temp/' . Carbon::now()->previousWeekendDay()->format('Y-m-d');
     }
 
     protected function encodeRecyclePath($path)
     {
         $path = str_replace('/', '#', $this->applyPrefix($path, false));
 
-        return '$recycled/#' . $path;
+        return '.recycled/#' . $path;
     }
 
     protected function decodeRecyclePath($name)
@@ -409,7 +391,7 @@ class Server
 
     protected function applyPrefix($path, $with_root = true)
     {
-        if ($path{0} !== '$') {
+        if ($path{0} !== '.') {
             $path = $this->prefix . ltrim($path, '\\/');
         }
 
