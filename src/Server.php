@@ -190,19 +190,26 @@ class Server
      */
     public function move($from, $to = null)
     {
+        if ($to && substr($to, -1) === '/') {
+            $to .= basename($from);
+        }
         $to = $this->applyPrefix($to ?? basename($from));
 
         $from = $this->applyPrefix($from);
-        
+
         if ($from === $to) return true;
 
-        $result = $this->driver->move($from, $to);
+        try {
+            $result = $this->driver->move($from, $to);
 
-        if ($result) {
-            $this->paths[] = ['from' => $from, 'to' => $to];
+            if ($result) {
+                $this->paths[] = ['from' => $from, 'to' => $to];
+            }
+
+            return $result;
+        } catch (\Exception $exception) {
+            throw new FileCenterException($exception->getMessage());
         }
-
-        return $result;
     }
 
     /**
@@ -251,7 +258,7 @@ class Server
         if ($bool) {
             $this->paths[] = ['from' => $form, 'to' => $to];
         }
-        
+
         return $bool;
     }
 
@@ -265,9 +272,13 @@ class Server
     {
         $path = is_array($path) ? $path : func_get_args();
 
-        return $this->driver->delete(array_map(function ($path) {
-            return $this->applyPrefix($path);
-        }, $path));
+        try {
+            return $this->driver->delete(array_map(function ($path) {
+                return $this->applyPrefix($path);
+            }, $path));
+        } catch (\Exception $exception) {
+            throw new FileCenterException($exception->getMessage());
+        }
     }
 
     /**

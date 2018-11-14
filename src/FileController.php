@@ -21,10 +21,10 @@ class FileController
                     throw new \Exception();
             }
 
-            return 'success';
+            return ['message' => 'success', 'status' => 1];
         } catch (\Exception $exception) {
             $server->rollBack();
-            return 'fail';
+            return ['message' => $exception->getMessage(), 'status' => -1];
         }
     }
 
@@ -37,8 +37,15 @@ class FileController
         ])->validate();
 
         $server = new Server($request->input('bucket'), $request->input('prefix'));
-        
-        return $server->delete($request->input('paths')) ? 'success' : 'fail';
+
+        try {
+            if ($server->delete($request->input('paths'))) {
+                return ['message' => 'success', 'status' => 1];
+            }
+            return ['message' => 'fail', 'status' => -1];
+        } catch (\Exception $exception) {
+            return ['message' => $exception->getMessage(), 'status' => -1];
+        }
     }
 
     public function recover(Request $request)
@@ -55,10 +62,10 @@ class FileController
             foreach ($request->input('paths') as $path)
                 if (!$server->recovery($path))
                     throw new \Exception();
-            return 'success';
+            return ['message' => 'success', 'status' => 1];
         } catch (\Exception $exception) {
             $server->rollBack();
-            return 'fail';
+            return ['message' => $exception->getMessage(), 'status' => -1];
         }
     }
 }

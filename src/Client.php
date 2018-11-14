@@ -3,6 +3,7 @@
 namespace YiluTech\FileCenter;
 
 use YiluTech\MicroApi\MicroApi;
+use YiluTech\MicroApi\MicroApiRequestException;
 
 class Client
 {
@@ -81,10 +82,14 @@ class Client
         }
 
         $items = array_map(function ($item) {
-            return [
-                'from' => $this->applyPrefix(is_array($item) ? $item['from'] : $item),
-                'to' => $this->applyPrefix(is_array($item) ? $item['to'] : basename($item))
-            ];
+            $from = $this->applyPrefix(is_array($item) ? $item['from'] : $item);
+
+            $to = is_array($item) ? $item['to'] : basename($item);
+            if (substr($to, -1) === '/') {
+                $to .= basename($from);
+            }
+            $to = $this->applyPrefix($to);
+            return compact('from', 'to');
         }, $items);
 
         if (!$this->exec('move', $items)) {
@@ -224,9 +229,13 @@ class Client
         $result = $api->post($this->uriPrefix . $action)->json([
             'paths' => $paths,
             'bucket' => $this->bucket
-        ])->run()->getContents();
+        ])->run()->getJson();
 
-        return $result === 'success';
+        if ($result['status'] === -1) {
+            throw new FileCenterException($result['message']);
+        }
+
+        return true;
     }
 
     protected function encodeRecyclePath($path)
