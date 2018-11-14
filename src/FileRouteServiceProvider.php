@@ -13,10 +13,12 @@ class FileRouteServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        app()->router->group(['namespace' => 'YiluTech\\FileCenter', 'prefix' => env('FILE_URI_FREFIX')], function ($router) {
-            $router->post('move', 'FileController@move');
-            $router->post('delete', 'FileController@delete');
-            $router->post('recover', 'FileController@recover');
+        app()->router->group(['namespace' => 'YiluTech\\FileCenter', 'prefix' => env('FILE_CENTER_URI_FREFIX')], function ($router) {
+            $name_prefix = rtrim(env('FILE_CENTER_URI_NAME_PREFIX'), '.') . '.';
+            
+            $router->post('move', 'FileController@move')->name($name_prefix . 'move');
+            $router->post('delete', 'FileController@delete')->name($name_prefix . 'delete');
+            $router->post('recover', 'FileController@recover')->name($name_prefix . 'revover');
         });
     }
 }

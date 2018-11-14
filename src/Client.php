@@ -20,9 +20,9 @@ class Client
 
     public function __construct($bucket = null)
     {
-        $this->bucket = $bucket ?? env('FILE_BUCKET');
+        $this->bucket = $bucket ?? env('FILE_CENTER_BUCKET');
 
-        $uri_prefix = env('FILE_URI_FREFIX');
+        $uri_prefix = env('FILE_CENTER_URI_FREFIX');
 
         $this->uriPrefix = $uri_prefix ? rtrim($uri_prefix, '\\/') . '/' : '';
     }
