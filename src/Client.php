@@ -19,21 +19,29 @@ class Client
 
     protected $uriPrefix;
 
+    protected $server_info;
+
     public function __construct($bucket = null)
     {
         $this->bucket = $bucket ?? env('FILE_CENTER_BUCKET');
 
+        if (!$bucket) {
+            throw new FileCenterException('bucket not dedined.');
+        }
+
         $uri_prefix = env('FILE_CENTER_URI_FREFIX');
 
         $this->uriPrefix = $uri_prefix ? rtrim($uri_prefix, '\\/') . '/' : '';
+
+        $this->server_info = $this->exec('info', null, 'get');
     }
 
-    public function bucket($bucket = null)
+    public static function make($bucket = null)
     {
         return new self($bucket);
     }
 
-    public function setBucket($bucket)
+    public function bucket($bucket)
     {
         $this->bucket = $bucket;
 
@@ -52,6 +60,26 @@ class Client
         return $this->prefix;
     }
 
+    public function getBucket()
+    {
+        return $this->bucket;
+    }
+
+    public function getHost()
+    {
+        return $this->server_info['host'];
+    }
+
+    public function getRoot()
+    {
+        return $this->server_info['root'];
+    }
+
+    public function getUrl($path, $scheme = 'http')
+    {
+        return "$scheme://{$this->getHost()}/{$this->getRoot()}{$path}";
+    }
+
     public function applyPrefix($path)
     {
         if ($path{0} !== '.') {
@@ -64,8 +92,6 @@ class Client
     /**
      * 移动文件
      * 如果 $to = null, 则将文件移动到默认目录下
-     * 批量移动
-     *      $from array < (string)path | array([ (string)from , (string)to ]) >
      *
      * @param $from string|array
      * @param null $to
@@ -73,24 +99,24 @@ class Client
      */
     public function move($from, $to = null)
     {
-        $items = is_array($from) ? $from :
-            [$to === null ? $from : ['from' => $from, 'to' => $to]];
-
-        if ($this->prepared) {
-            $this->queue['move'][] = $items;
-            return true;
-        }
-
-        $items = array_map(function ($item) {
-            $from = $this->applyPrefix(is_array($item) ? $item['from'] : $item);
-
-            $to = is_array($item) ? $item['to'] : basename($item);
+        if (!is_array($from)) {
+            $to = $to ?? basename($from);
             if (substr($to, -1) === '/') {
                 $to .= basename($from);
             }
-            $to = $this->applyPrefix($to);
-            return compact('from', 'to');
-        }, $items);
+        }
+
+        if ($this->prepared) {
+            $this->queue['move'][] = [compact('from', 'to')];
+            return $this->applyPrefix($to);
+        }
+
+        $items = array_map(function ($item) {
+            return [
+                'from' => $this->applyPrefix($item['from']),
+                'to' => $this->applyPrefix($item['to']),
+            ];
+        }, is_array($from) ? $from : [compact('from', 'to')]);
 
         if (!$this->exec('move', $items)) {
             return false;
@@ -100,7 +126,7 @@ class Client
             return ['from' => $item['to'], 'to' => $item['from']];
         }, $items));
 
-        return true;
+        return is_array($from) ? true : $this->applyPrefix($to);
     }
 
     /**
@@ -172,6 +198,11 @@ class Client
         return $this;
     }
 
+    public function isPrepared()
+    {
+        return $this->prepared;
+    }
+
     /**
      * 提交操作
      *
@@ -222,11 +253,11 @@ class Client
         $this->history[$action] = isset($this->history[$action]) ? array_merge($this->history[$action], $paths) : $paths;
     }
 
-    protected function exec($action, $paths)
+    protected function exec($action, $paths = null, $method = 'post')
     {
         $api = new MicroApi();
 
-        $result = $api->post($this->uriPrefix . $action)->json([
+        $result = $api->{$method}($this->uriPrefix . $action)->json([
             'paths' => $paths,
             'bucket' => $this->bucket
         ])->run()->getJson();
@@ -235,7 +266,7 @@ class Client
             throw new FileCenterException($result['message']);
         }
 
-        return true;
+        return $result['message'];
     }
 
     protected function encodeRecyclePath($path)

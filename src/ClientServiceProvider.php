@@ -16,7 +16,7 @@ class ClientServiceProvider extends ServiceProvider
         class_alias(FileCenterClientFacade::class, 'FileCenterClient');
 
         app()->bind('FileCenterClient', function ($app) {
-            return new Client();
+            return new ClientManage();
         });
     }
 }

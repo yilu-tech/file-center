@@ -6,6 +6,23 @@ use Illuminate\Http\Request;
 
 class FileController
 {
+    public function info(Request $request)
+    {
+        app('validator')->make($request->input(), [
+            'prefix' => 'nullable|string|max:64'
+        ])->validate();
+
+        $server = new Server($request->input('bucket'));
+
+        return [
+            'message' => [
+                'root' => $server->getRoot(),
+                'host' => $server->getHost()
+            ],
+            'status' => 1
+        ];
+    }
+
     public function move(Request $request)
     {
         app('validator')->make($request->input(), [
@@ -34,6 +51,7 @@ class FileController
             'paths' => 'required|array|min:1',
             'paths.*' => 'string',
             'bucket' => 'required|string|max:16',
+            'prefix' => 'nullable|string|max:64'
         ])->validate();
 
         $server = new Server($request->input('bucket'), $request->input('prefix'));
@@ -56,7 +74,7 @@ class FileController
             'bucket' => 'required|string|max:16',
         ])->validate();
 
-        $server = new Server($request->input('bucket'), $request->input('prefix'));
+        $server = new Server($request->input('bucket'));
 
         try {
             foreach ($request->input('paths') as $path)

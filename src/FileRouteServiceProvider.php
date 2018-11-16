@@ -15,6 +15,7 @@ class FileRouteServiceProvider extends ServiceProvider
     {
         app()->router->group(['namespace' => 'YiluTech\\FileCenter', 'prefix' => env('FILE_CENTER_URI_FREFIX')], function ($router) {
             $name_prefix = rtrim(env('FILE_CENTER_URI_NAME_PREFIX'), '.') . '.';
+            $router->get('info', 'FileController@info')->name($name_prefix . 'move');
             
             $router->post('move', 'FileController@move')->name($name_prefix . 'move');
             $router->post('delete', 'FileController@delete')->name($name_prefix . 'delete');

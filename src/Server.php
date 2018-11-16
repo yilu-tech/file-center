@@ -23,6 +23,8 @@ class Server
 
     protected $prefix;
 
+    protected $disk;
+
     protected $paths = array();
 
     /**
@@ -36,9 +38,11 @@ class Server
 
         if (!$config) throw new \Exception("bucket \"$bucket\" not exists");
 
-        if (empty($config['disk'])) {
+        if (empty($config['disk']) || empty($disk = config('filesystems.disks.' . $config['disk']))) {
             throw new \Exception("bucket \"$bucket\" disk not defined");
         }
+
+        $this->disk = $disk;
 
         if (isset($config['root'])) {
             $this->root = rtrim($config['root'], '\\/') . '/';
@@ -57,6 +61,23 @@ class Server
         }
 
         $this->prefix = rtrim($prefix, '\\/') . '/';
+    }
+
+    public function getRoot()
+    {
+        return $this->root;
+    }
+
+    public function getHost()
+    {
+        switch ($this->disk['driver']) {
+            case 'oss':
+                return $this->disk['bucket'] . '.' . $this->disk['endpoint'];
+            case 'public':
+                return $_SERVER['HTTP_HOST'] . $this->disk['url'];
+            default:
+                return $_SERVER['HTTP_HOST'];
+        }
     }
 
     /**
