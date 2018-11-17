@@ -72,12 +72,17 @@ class Server
     {
         switch ($this->disk['driver']) {
             case 'oss':
-                return $this->disk['bucket'] . '.' . $this->disk['endpoint'];
+                return isset($this->disk['url']) ? $this->disk['url'] : ($this->disk['bucket'] . '.' . $this->disk['endpoint']);
             case 'public':
-                return $_SERVER['HTTP_HOST'] . $this->disk['url'];
+                return $this->disk['url'];
             default:
                 return $_SERVER['HTTP_HOST'];
         }
+    }
+
+    public function getUrl($path, $scheme = 'http')
+    {
+        return "$scheme://{$this->getHost()}/{$this->getRoot()}{$path}";
     }
 
     /**
