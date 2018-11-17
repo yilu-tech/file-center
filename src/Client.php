@@ -75,9 +75,9 @@ class Client
         return $this->server_info['root'];
     }
 
-    public function getUrl($path, $scheme = 'http')
+    public function getUrl($path)
     {
-        return "$scheme://{$this->getHost()}/{$this->getRoot()}{$path}";
+        return "{$this->getHost()}/{$this->getRoot()}{$path}";
     }
 
     public function applyPrefix($path)

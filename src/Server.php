@@ -70,19 +70,15 @@ class Server
 
     public function getHost()
     {
-        switch ($this->disk['driver']) {
-            case 'oss':
-                return isset($this->disk['url']) ? $this->disk['url'] : ($this->disk['bucket'] . '.' . $this->disk['endpoint']);
-            case 'public':
-                return $this->disk['url'];
-            default:
-                return $_SERVER['HTTP_HOST'];
+        if (empty($this->disk['driver'])) {
+            throw new FileCenterException('disk url not defined .');
         }
+        return $this->disk['url'];
     }
 
-    public function getUrl($path, $scheme = 'http')
+    public function getUrl($path)
     {
-        return "$scheme://{$this->getHost()}/{$this->getRoot()}{$path}";
+        return "{$this->getHost()}/{$this->getRoot()}{$path}";
     }
 
     /**
