@@ -12,8 +12,7 @@
     "require": {
         "php": ">=7.0.0",
         "aliyuncs/oss-sdk-php": "^2.3",
-        "league/flysystem": "^1.0",
-        "yilu-tech/micro-api": "master-dev"
+        "league/flysystem": "^1.0"
     },
     "autoload": {
         "psr-4": {
