@@ -26,7 +26,7 @@
         YiluTech\FileCenter\FileRouteServiceProvider::class
         
         // 内网客户端 client provider, 使用 facade 需注入 
-        YiluTech\FileCenter\FileRouteServiceProvider::class
+        YiluTech\FileCenter\ClientServiceProvider::class
         
         // 如果使用 OSS 
         YiluTech\FileCenter\AliyunOss\AliyunOssServiceProvider::class
@@ -46,50 +46,53 @@
 #### 内网客户端配置
 
         // .env
-        FILE_BUCKET=$bucket
-        FILE_URI_PREFIX=    // 链接前缀
+        FILE_CENTER_BUCKET=$bucket
+        FILE_CENTER_URI_PREFIX=    // 链接前缀
 
 ## 实例
 
 #### 服务端
+```php
 
-    public function uploadImage(Request $request)       // 文件上传
-        {
-            if ($request->has('cut')) { // 判断是否需要裁剪图片
-                $rules = [
-                    'image' => 'required|file|max:2048',
-                    'src_x' => 'required|numeric',
-                    'src_y' => 'required|numeric',
-                    'dst_w' => 'required|numeric|min:8',
-                    'dst_h' => 'required|numeric|min:8',
-                    'src_w' => 'required|numeric|min:8',
-                    'src_h' => 'required|numeric|min:8',
-                ];
-            } else {
-                $rules = [
-                    'images' => 'required|array|min:1',
-                    'images.*' => 'file|max:2048'
-                ];
-            }
-            $rules['bucket'] = 'required|string|max:16';        // bucket
-    
-            $this->validate($request, $rules);
-    
-            $server = new Server($request->input('bucket')); // 初始实例
-    
-            $is_temp = (int)$request->input('temp', 1);     // 判断是否存到暂存目录，默认开启
-    
-            if ($request->has('cut')) {
-                return $is_temp ? $server->storeTempWithCut($request->all()) :
-                    $server->storeWithCut($request->all());
-            } else {
-                foreach ($request->file('images') as $item) {
-                    $paths[] = $is_temp ? $server->storeTemp($item) : $server->store($item);
-                }
-                return $paths;
-            }
+public function uploadImage(Request $request)       // 文件上传
+{
+    if ($request->has('cut')) { // 判断是否需要裁剪图片
+        $rules = [
+            'image' => 'required|file|max:2048',
+            'src_x' => 'required|numeric',
+            'src_y' => 'required|numeric',
+            'dst_w' => 'required|numeric|min:8',
+            'dst_h' => 'required|numeric|min:8',
+            'src_w' => 'required|numeric|min:8',
+            'src_h' => 'required|numeric|min:8',
+        ];
+    } else {
+        $rules = [
+            'images' => 'required|array|min:1',
+            'images.*' => 'file|max:2048'
+        ];
+    }
+    $rules['bucket'] = 'required|string|max:16';        // bucket
+
+    $this->validate($request, $rules);
+
+    $server = new Server($request->input('bucket')); // 初始实例
+
+    $is_temp = (int)$request->input('temp', 1);     // 判断是否存到暂存目录，默认开启
+
+    if ($request->has('cut')) {
+        return $is_temp ? $server->storeTempWithCut($request->all()) :
+            $server->storeWithCut($request->all());
+    } else {
+        foreach ($request->file('images') as $item) {
+            $paths[] = $is_temp ? $server->storeTemp($item) : $server->store($item);
         }
-        
+        return $paths;
+    }
+}
+
+```
+
 #### 内网客户端
         
         try {

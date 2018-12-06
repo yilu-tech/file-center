@@ -29,7 +29,7 @@ class Client
             throw new FileCenterException('bucket not dedined.');
         }
 
-        $uri_prefix = env('FILE_CENTER_URI_FREFIX');
+        $uri_prefix = env('FILE_CENTER_URI_PREFIX');
 
         $this->uriPrefix = $uri_prefix ? rtrim($uri_prefix, '\\/') . '/' : '';
 
