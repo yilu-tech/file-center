@@ -2,8 +2,6 @@
 
 namespace YiluTech\FileCenter;
 
-use YiluTech\MicroApi\Exceptions\MicroApiRequestException;
-
 class Client
 {
     protected $history = array();
@@ -98,51 +96,50 @@ class Client
      */
     public function move($from, $to = null)
     {
-        $items = $this->getMoveToFilePaths(is_array($from) ? $from : [$from], $to);
+        $items = $this->getMoveItems($from, $to);
 
-        if(!count($items)) return $items;
-
-        $tos = array_map(function ($item) {
-            return $item['to'];
-        }, $items);
+        if (!count($items)) return $items;
 
         if ($this->prepared) {
-            $this->queue['move'][] = [compact('from', 'to')];
-            return is_array($from) ? $tos : $tos[0];
+            $this->push('move', $items);
         }
 
-        $exec_items = array_filter($items, function ($item) {
-            return $item['from'] !== $item['to'];
-        });
-
-        if (count($exec_items) && !$this->exec('move', $exec_items)) {
-            return false;
+        foreach ($items as &$item) {
+            if (!$item['to']) {
+                $item['to'] = basename($item['from']);
+            } elseif (substr($item['to'], -1) === '/') {
+                $item['to'] .= basename($item['from']);
+            }
+            $item['from'] = $this->applyPrefix($item['from']);
+            $tos[] = $item['to'] = $this->applyPrefix($item['to']);
         }
 
-        $this->record('move', array_map(function ($item) {
-            return ['from' => $item['to'], 'to' => $item['from']];
-        }, $exec_items));
+        if (!$this->prepared) {
+            $exec_items = array_filter($items, function ($item) {
+                return $item['from'] !== $item['to'];
+            });
+
+            if (count($exec_items) && !$this->exec('move', $exec_items)) {
+                return false;
+            }
+
+            $this->record('move', array_map(function ($item) {
+                return ['from' => $item['to'], 'to' => $item['from']];
+            }, $exec_items));
+        }
 
         return is_array($from) ? $tos : $tos[0];
     }
 
-    protected function getMoveToFilePaths(array $froms, $to)
+    protected function getMoveItems($from, $to)
     {
         return array_map(function ($from) use ($to) {
             if (is_array($from)) {
-                $to = $from['to'] ?? $to;
-                $from = $from['from'];
+                $from['to'] = $from['to'] ?? $to;
+                return $from;
             }
-            if (!$to) {
-                $to = basename($from);
-            } elseif (substr($to, -1) === '/') {
-                $to .= basename($from);
-            }
-
-            $from = $this->applyPrefix($from);
-            $to = $this->applyPrefix($to);
             return compact('from', 'to');
-        }, $froms);
+        }, is_array($from) ? $from : [$from]);
     }
 
     /**
@@ -156,7 +153,7 @@ class Client
         $paths = is_array($path) ? $path : func_get_args();
 
         if ($this->prepared) {
-            $this->queue['delete'][] = $paths;
+            $this->push('delete', $paths);
             return true;
         }
 
@@ -186,7 +183,7 @@ class Client
         $paths = is_array($path) ? $path : func_get_args();
 
         if ($this->prepared) {
-            $this->queue['recover'][] = $paths;
+            $this->push('recover', $paths);
             return true;
         }
 
@@ -230,8 +227,8 @@ class Client
 
         $bool = true;
 
-        foreach ($this->queue as $fun => $paths) {
-            if (!$this->{$fun}(array_collapse($paths))) {
+        foreach ($this->queue as $action => $items) {
+            if (!$this->{$action}(array_collapse($items))) {
                 $bool = false;
                 $this->rollback();
                 break;
@@ -257,16 +254,21 @@ class Client
             $this->prepared = false;
         }
 
-        foreach ($this->history as $fun => $paths) {
-            $this->exec($fun, $paths);
+        foreach ($this->history as $action => $items) {
+            $this->exec($action, array_collapse($items));
         }
 
         $this->history = [];
     }
 
+    protected function push($action, $paths)
+    {
+        $this->queue[$action][] = $paths;
+    }
+
     protected function record($action, $paths)
     {
-        $this->history[$action] = isset($this->history[$action]) ? array_merge($this->history[$action], $paths) : $paths;
+        $this->history[$action][] = $paths;
     }
 
     protected function exec($action, $paths = null, $method = 'post')
