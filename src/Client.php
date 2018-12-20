@@ -2,8 +2,7 @@
 
 namespace YiluTech\FileCenter;
 
-use YiluTech\MicroApi\MicroApi;
-use YiluTech\MicroApi\MicroApiRequestException;
+use YiluTech\MicroApi\Exceptions\MicroApiRequestException;
 
 class Client
 {
@@ -82,7 +81,7 @@ class Client
 
     public function applyPrefix($path)
     {
-        if ($path{0} !== '.') {
+        if ($path{0} !== '.' && $path{0} !== '/') {
             $path = $this->prefix . ltrim($path, '\\/');
         }
 
@@ -95,38 +94,55 @@ class Client
      *
      * @param $from string|array
      * @param null $to
-     * @return array|bool
+     * @return mixed
      */
     public function move($from, $to = null)
     {
-        if (!is_array($from)) {
-            $to = $to ?? basename($from);
-            if (substr($to, -1) === '/') {
-                $to .= basename($from);
-            }
-        }
+        $items = $this->getMoveToFilePaths(is_array($from) ? $from : [$from], $to);
+
+        if(!count($items)) return $items;
+
+        $tos = array_map(function ($item) {
+            return $item['to'];
+        }, $items);
 
         if ($this->prepared) {
             $this->queue['move'][] = [compact('from', 'to')];
-            return $this->applyPrefix($to);
+            return is_array($from) ? $tos : $tos[0];
         }
 
-        $items = array_map(function ($item) {
-            return [
-                'from' => $this->applyPrefix($item['from']),
-                'to' => $this->applyPrefix($item['to']),
-            ];
-        }, is_array($from) ? $from : [compact('from', 'to')]);
+        $exec_items = array_filter($items, function ($item) {
+            return $item['from'] !== $item['to'];
+        });
 
-        if (!$this->exec('move', $items)) {
+        if (count($exec_items) && !$this->exec('move', $exec_items)) {
             return false;
         }
 
         $this->record('move', array_map(function ($item) {
             return ['from' => $item['to'], 'to' => $item['from']];
-        }, $items));
+        }, $exec_items));
 
-        return is_array($from) ? true : $this->applyPrefix($to);
+        return is_array($from) ? $tos : $tos[0];
+    }
+
+    protected function getMoveToFilePaths(array $froms, $to)
+    {
+        return array_map(function ($from) use ($to) {
+            if (is_array($from)) {
+                $to = $from['to'] ?? $to;
+                $from = $from['from'];
+            }
+            if (!$to) {
+                $to = basename($from);
+            } elseif (substr($to, -1) === '/') {
+                $to .= basename($from);
+            }
+
+            $from = $this->applyPrefix($from);
+            $to = $this->applyPrefix($to);
+            return compact('from', 'to');
+        }, $froms);
     }
 
     /**
@@ -255,9 +271,7 @@ class Client
 
     protected function exec($action, $paths = null, $method = 'post')
     {
-        $api = new MicroApi();
-
-        $result = $api->{$method}($this->uriPrefix . $action)->json([
+        $result = \MicroApi::{$method}($this->uriPrefix . $action)->json([
             'paths' => $paths,
             'bucket' => $this->bucket
         ])->run()->getJson();
@@ -265,7 +279,6 @@ class Client
         if ($result['status'] === -1) {
             throw new FileCenterException($result['message']);
         }
-
         return $result['message'];
     }
 
