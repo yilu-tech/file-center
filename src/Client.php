@@ -278,10 +278,9 @@ class Client
             'bucket' => $this->bucket
         ])->run()->getJson();
 
-        if ($result['status'] === -1) {
-            throw new FileCenterException($result['message']);
-        }
-        return $result['message'];
+        if ($result['errcode']) throw new FileCenterException($result['errmsg']);
+        
+        return $result['data'];
     }
 
     protected function encodeRecyclePath($path)

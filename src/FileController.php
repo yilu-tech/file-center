@@ -15,11 +15,11 @@ class FileController
         $server = new Server($request->input('bucket'));
 
         return [
-            'message' => [
+            'data' => [
                 'root' => $server->getRoot(),
                 'host' => $server->getHost()
             ],
-            'status' => 1
+            'errcode' => 0
         ];
     }
 
@@ -38,10 +38,10 @@ class FileController
                     throw new \Exception();
             }
 
-            return ['message' => 'success', 'status' => 1];
+            return ['errcode' => 0, 'data' => 1];
         } catch (\Exception $exception) {
             $server->rollBack();
-            return ['message' => $exception->getMessage(), 'status' => -1];
+            return ['errmsg' => $exception->getMessage(), 'errcode' => -1];
         }
     }
 
@@ -58,11 +58,11 @@ class FileController
 
         try {
             if ($server->delete($request->input('paths'))) {
-                return ['message' => 'success', 'status' => 1];
+                return ['errcode' => 0, 'data' => 1];
             }
-            return ['message' => 'fail', 'status' => -1];
+            return ['errmsg' => 'fail', 'errcode' => -1];
         } catch (\Exception $exception) {
-            return ['message' => $exception->getMessage(), 'status' => -1];
+            return ['errmsg' => $exception->getMessage(), 'errcode' => -1];
         }
     }
 
@@ -80,10 +80,10 @@ class FileController
             foreach ($request->input('paths') as $path)
                 if (!$server->recovery($path))
                     throw new \Exception();
-            return ['message' => 'success', 'status' => 1];
+            return ['errcode' => 0, 'data' => 1];
         } catch (\Exception $exception) {
             $server->rollBack();
-            return ['message' => $exception->getMessage(), 'status' => -1];
+            return ['errmsg' => $exception->getMessage(), 'errcode' => -1];
         }
     }
 }
