@@ -248,11 +248,11 @@ class Server
 
         foreach ($paths as $path) {
             try {
-                if ($this->isRecycledFile($path)) {
+                if ($this->isTempFile($path)) {
                     if (!$this->destroy($path)) {
                         $success = false;
                     }
-                } elseif (!$this->move($path, $this->encodeRecyclePath($path))) {
+                } elseif (!$this->move($path, $this->makeRecyclePath($path))) {
                     $success = false;
                 }
             } catch (\Exception $e) {
@@ -266,14 +266,14 @@ class Server
     /**
      * 恢复回收站文件
      *
-     * @param $name
+     * @param $filename
      * @return bool
      */
-    public function recovery($name)
+    public function recovery($filename)
     {
-        $form = $this->applyRoot('.recycled/' . $name);
+        $form = $this->applyRoot($this->getRecyclePath($filename));
 
-        $to = $this->applyRoot($this->decodeRecyclePath($name));
+        $to = $this->applyRoot($this->getRecoverPath($filename));
 
         $bool = $this->driver->move($form, $to);
 
@@ -304,7 +304,7 @@ class Server
     }
 
     /**
-     * 清楚操作记录
+     * 清除操作记录
      *
      */
     public function clearRecord()
@@ -336,18 +336,7 @@ class Server
      */
     public function isTempFile($path)
     {
-        return preg_match('/\\.temp\\/\\d{4}-\\d{2}-\\d{2}\\//', $path);
-    }
-
-    /**
-     * 判断是否为回收站下的文件
-     *
-     * @param $path
-     * @return false|int
-     */
-    public function isRecycledFile($path)
-    {
-        return preg_match('/\\.recycled\\/#/', $path);
+        return preg_match('/\\.temp\\/\\d{8}\\//', $path);
     }
 
     /**
@@ -372,54 +361,63 @@ class Server
     }
 
     /**
-     * 清空回收站
-     *
-     * @return mixed
-     */
-    public function clearRecycle()
-    {
-        return $this->driver->deleteDir('.recycled');
-    }
-
-    /**
-     * 清空两周前的暂存文件
+     * 清空7天前暂存文件
      *
      * @return bool
      */
     public function clearTemp()
     {
-        $date = Carbon::now()->previousWeekendDay()->previousWeekendDay();
-
+        $date = Carbon::now()->subDays(7);
         $result = false;
-
-        while ($this->driver->deleteDir('.temp/' . $date)->format('Y-m-d')) {
-            $date = $date->previousWeekendDay();
+        while ($this->driver->deleteDir('.temp/' . $date->format('Ymd'))) {
+            $date = $date->subDay();
             $result = true;
         }
-
         return $result;
     }
 
     protected function makeFileName($file, $suffix = null)
     {
-        return Str::random(32) . '.' . ($suffix ?? $file->guessExtension());
+        return $this->timeToStr() . Str::random(16) . '.' . ($suffix ?? $file->guessExtension());
     }
 
-    protected function getTempDir()
+    protected function makeRecyclePath($path)
     {
-        return '.temp/' . Carbon::now()->previousWeekendDay()->format('Y-m-d');
+        return $this->getTempDir() . '/' . $this->encodePath($path);
     }
 
-    protected function encodeRecyclePath($path)
+    protected function getRecyclePath($filename)
     {
-        $path = str_replace('/', '#', $this->applyPrefix($path, false));
-
-        return '.recycled/#' . $path;
+        $parts = explode('#', $filename);
+        $timestamp = $this->strToTime(current($parts));
+        return '.temp/' . date('Ymd', $timestamp) . '/' . $filename;
     }
 
-    protected function decodeRecyclePath($name)
+    protected function getRecoverPath($filename)
     {
-        return substr(str_replace('#', '/', $name), 1);
+        $parts = explode('#', $filename);
+        array_shift($parts);
+        return implode('/', $parts);
+    }
+
+    protected function getTempDir($timestamp = null)
+    {
+        return '.temp/' . date('Ymd', $timestamp ?? time());
+    }
+
+    protected function encodePath($path)
+    {
+        return $this->timeToStr() . '#' . str_replace('/', '#', $this->applyPrefix($path, false));
+    }
+
+    protected function timeToStr($timestamp = null)
+    {
+        return base_convert(floor($timestamp ?? time() / 86400), 10, 36);
+    }
+
+    protected function strToTime($str)
+    {
+        return base_convert($str, 36, 10) * 86400;
     }
 
     protected function applyPrefix($path, $with_root = true)
@@ -427,7 +425,6 @@ class Server
         if ($path{0} !== '.') {
             $path = $this->prefix . ltrim($path, '\\/');
         }
-
         return $with_root ? $this->applyRoot($path) : $path;
     }
 

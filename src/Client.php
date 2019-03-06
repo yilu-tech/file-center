@@ -166,7 +166,7 @@ class Client
         }
 
         $this->record('recover', array_map(function ($path) {
-            return $this->encodeRecyclePath($path);
+            return $this->makeRecycledFilename($path);
         }, $paths));
 
         return true;
@@ -192,7 +192,7 @@ class Client
         }
 
         $this->record('delete', array_map(function ($path) {
-            return $this->decodeRecyclePath($path);
+            return $this->getRecoverPath($path);
         }, $paths));
 
         return true;
@@ -279,23 +279,29 @@ class Client
         ])->run()->getJson();
 
         if ($result['errcode']) throw new FileCenterException($result['errmsg']);
-        
+
         return $result['data'];
     }
 
-    protected function encodeRecyclePath($path)
+    protected function makeRecycledFilename($path)
     {
-        $path = str_replace('/', '#', $path);
-
-        if ($path{0} !== '#') {
-            $path = '#' . $path;
-        }
-
-        return $path;
+        return $this->timeToStr() . '#' . str_replace('/', '#', $path);
     }
 
-    protected function decodeRecyclePath($name)
+    protected function getRecoverPath($filename)
     {
-        return substr(str_replace('#', '/', $name), 1);
+        $parts = explode('#', $filename);
+        array_shift($parts);
+        return implode('/', $parts);
+    }
+
+    protected function timeToStr($timestamp = null)
+    {
+        return base_convert(floor($timestamp ?? time() / 86400), 10, 36);
+    }
+
+    protected function strToTime($str)
+    {
+        return base_convert($str, 36, 10) * 86400;
     }
 }
