@@ -152,6 +152,8 @@ class Client
     {
         $paths = is_array($path) ? $path : func_get_args();
 
+        if (!count($paths)) return true;
+
         if ($this->prepared) {
             $this->push('delete', $paths);
             return true;
@@ -181,6 +183,8 @@ class Client
     public function recover($path)
     {
         $paths = is_array($path) ? $path : func_get_args();
+
+        if (!count($paths)) return true;
 
         if ($this->prepared) {
             $this->push('recover', $paths);
