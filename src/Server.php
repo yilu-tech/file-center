@@ -247,6 +247,9 @@ class Server
         $success = true;
 
         foreach ($paths as $path) {
+
+            if (!$this->exists($path)) continue;
+
             try {
                 if ($this->isTempFile($path)) {
                     if (!$this->destroy($path)) {
