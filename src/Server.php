@@ -350,7 +350,7 @@ class Server
      */
     public function exists($path)
     {
-        return $this->driver->exists($path);
+        return $this->driver->exists($this->applyPrefix($path));
     }
 
     /**
