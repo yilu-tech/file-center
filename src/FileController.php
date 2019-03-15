@@ -12,15 +12,18 @@ class FileController
             'prefix' => 'nullable|string|max:64'
         ])->validate();
 
-        $server = new Server($request->input('bucket'));
-
-        return [
-            'data' => [
-                'root' => $server->getRoot(),
-                'host' => $server->getHost()
-            ],
-            'errcode' => 0
-        ];
+        try {
+            $server = new Server($request->input('bucket'));
+            return [
+                'data' => [
+                    'root' => $server->getRoot(),
+                    'host' => $server->getHost()
+                ],
+                'errcode' => 0
+            ];
+        } catch (\Exception $exception) {
+            return ['errmsg' => $exception->getMessage(), 'errcode' => -1];
+        }
     }
 
     public function move(Request $request)
