@@ -29,8 +29,6 @@ class Client
         $uri_prefix = env('FILE_CENTER_URI_PREFIX');
 
         $this->uriPrefix = $uri_prefix ? rtrim($uri_prefix, '\\/') . '/' : '';
-
-        $this->server_info = $this->exec('info', null, 'get');
     }
 
     public static function make($bucket = null)
@@ -62,14 +60,22 @@ class Client
         return $this->bucket;
     }
 
+    public function getInfo()
+    {
+        if (!$this->server_info) {
+            $this->server_info = $this->exec('info', null, 'get');
+        }
+        return $this->server_info;
+    }
+
     public function getHost()
     {
-        return $this->server_info['host'];
+        return $this->getInfo()['host'];
     }
 
     public function getRoot()
     {
-        return $this->server_info['root'];
+        return $this->getInfo()['root'];
     }
 
     public function getUrl($path)
@@ -277,13 +283,10 @@ class Client
 
     protected function exec($action, $paths = null, $method = 'post')
     {
-        $result = \MicroApi::{$method}($this->uriPrefix . $action)->json([
-            'paths' => $paths,
-            'bucket' => $this->bucket
-        ])->run()->getJson();
+        $uri = $this->uriPrefix . $action . '?bucket=' . $this->bucket;
+        $result = \MicroApi::{$method}($this->uriPrefix . $action)->json(compact('paths'))->run()->getJson();
 
         if ($result['errcode']) throw new FileCenterException($result['errmsg']);
-
         return $result['data'];
     }
 
