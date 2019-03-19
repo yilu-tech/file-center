@@ -33,14 +33,14 @@ class FileController
             'bucket' => 'required|string|max:16',
             'prefix' => 'nullable|string|max:64'
         ])->validate();
-        $server = new Server($request->input('bucket'), $request->input('prefix'));
+
         try {
+            $server = new Server($request->input('bucket'), $request->input('prefix'));
             foreach ($request->input('paths') as $path) {
                 $argv = is_array($path) ? [$path['from'], $path['to']] : [$path];
                 if (!$server->move(...$argv))
                     throw new \Exception();
             }
-
             return ['errcode' => 0, 'data' => 1];
         } catch (\Exception $exception) {
             $server->rollBack();
@@ -57,9 +57,8 @@ class FileController
             'prefix' => 'nullable|string|max:64'
         ])->validate();
 
-        $server = new Server($request->input('bucket'), $request->input('prefix'));
-
         try {
+            $server = new Server($request->input('bucket'), $request->input('prefix'));
             if ($server->delete($request->input('paths'))) {
                 return ['errcode' => 0, 'data' => 1];
             }
@@ -77,9 +76,8 @@ class FileController
             'bucket' => 'required|string|max:16',
         ])->validate();
 
-        $server = new Server($request->input('bucket'));
-
         try {
+            $server = new Server($request->input('bucket'));
             foreach ($request->input('paths') as $path)
                 if (!$server->recovery($path))
                     throw new \Exception();

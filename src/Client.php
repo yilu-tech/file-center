@@ -283,8 +283,10 @@ class Client
 
     protected function exec($action, $paths = null, $method = 'post')
     {
-        $uri = $this->uriPrefix . $action . '?bucket=' . $this->bucket;
-        $result = \MicroApi::{$method}($this->uriPrefix . $action)->json(compact('paths'))->run()->getJson();
+        $result = \MicroApi::{$method}($this->uriPrefix . $action)->json([
+            'paths' => $paths,
+            'bucket' => $this->bucket
+        ])->run()->getJson();
 
         if ($result['errcode']) throw new FileCenterException($result['errmsg']);
         return $result['data'];
