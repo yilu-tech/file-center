@@ -203,6 +203,15 @@ class Server
     }
 
     /**
+     * @param $path
+     * @param null $filename
+     */
+    public function download($path, $filename = null)
+    {
+        return $this->driver->download($this->applyPrefix($path), $filename);
+    }
+
+    /**
      * 移动文件
      * 如果 $to = null, 则将文件移动到默认目录下
      *
