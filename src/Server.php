@@ -73,7 +73,7 @@ class Server
         if (empty($this->disk['driver'])) {
             throw new FileCenterException('disk url not defined .');
         }
-        return $this->disk['url'];
+        return data_get($this->disk, 'host') ?: data_get($this->disk, 'url') ?: parse_url(env('APP_URL', PHP_URL_HOST));
     }
 
     public function getUrl($path)
