@@ -5,12 +5,12 @@ namespace YiluTech\FileCenter;
 use YiluTech\MicroApi\MicroApi;
 use YiluTech\MicroApi\MicroApiRequestException;
 
-class ClientManage
+class FileClientManager
 {
     protected $buckets = array();
 
     protected $current;
-    
+
     public function bucket($bucket = null)
     {
         if ($bucket === null) {

@@ -3,8 +3,9 @@
 namespace YiluTech\FileCenter;
 
 use Illuminate\Support\ServiceProvider;
+use YiluTech\FileCenter\Facade\FileCenterClientFacade;
 
-class ClientServiceProvider extends ServiceProvider
+class FileClientServiceProvider extends ServiceProvider
 {
     /**
      * Define your route model bindings, pattern filters, etc.
@@ -16,7 +17,7 @@ class ClientServiceProvider extends ServiceProvider
         class_alias(FileCenterClientFacade::class, 'FileCenterClient');
 
         app()->bind('FileCenterClient', function ($app) {
-            return new ClientManage();
+            return new FileClientManager();
         });
     }
 }

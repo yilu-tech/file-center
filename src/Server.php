@@ -381,9 +381,16 @@ class Server
     {
         $date = Carbon::now()->subDays(7);
         $result = false;
-        while ($this->driver->deleteDir('.temp/' . $date->format('Ymd'))) {
+        $exists = true;
+
+        $iv = 3;
+        while ($exists || --$iv) {
+            $path = $this->applyRoot('.temp/' . $date->format('Ymd'));
+            if ($exists = $this->driver->deleteDir($path)) {
+                $iv = 3;
+                $result = true;
+            }
             $date = $date->subDay();
-            $result = true;
         }
         return $result;
     }

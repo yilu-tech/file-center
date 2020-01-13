@@ -1,6 +1,6 @@
 <?php
 
-namespace YiluTech\FileCenter;
+namespace YiluTech\FileCenter\Http\Controller;
 
 use Illuminate\Http\Request;
 

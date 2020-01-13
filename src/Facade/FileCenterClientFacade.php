@@ -1,6 +1,6 @@
 <?php
 
-namespace YiluTech\FileCenter;
+namespace YiluTech\FileCenter\Facade;
 
 use Illuminate\Support\Facades\Facade;
 
