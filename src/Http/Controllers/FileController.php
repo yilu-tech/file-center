@@ -1,8 +1,9 @@
 <?php
 
-namespace YiluTech\FileCenter\Http\Controller;
+namespace YiluTech\FileCenter\Http\Controllers;
 
 use Illuminate\Http\Request;
+use YiluTech\FileCenter\Server;
 
 class FileController
 {
