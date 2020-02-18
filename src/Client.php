@@ -23,7 +23,7 @@ class Client
         $this->bucket = $bucket ?? env('FILE_CENTER_BUCKET');
 
         if (!$bucket) {
-            throw new FileCenterException('bucket not dedined.');
+            throw new FileCenterException('bucket not defined.');
         }
 
         $uri_prefix = env('FILE_CENTER_URI_PREFIX');
