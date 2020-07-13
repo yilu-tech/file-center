@@ -14,7 +14,9 @@ class FileClientServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        class_alias(FileCenterClientFacade::class, 'FileCenterClient');
+        if (!class_exists('FileCenterClient')) {
+            class_alias(FileCenterClientFacade::class, 'FileCenterClient');
+        }
 
         app()->bind('FileCenterClient', function ($app) {
             return new FileClientManager();

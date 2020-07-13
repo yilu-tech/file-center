@@ -18,6 +18,8 @@ class Client
 
     protected $server_info;
 
+    protected $commitMocked = false;
+
     public function __construct($bucket = null)
     {
         $this->bucket = $bucket ?? env('FILE_CENTER_BUCKET');
@@ -226,6 +228,11 @@ class Client
         return $this->prepared;
     }
 
+    public function mockCommit()
+    {
+        $this->commitMocked = true;
+    }
+
     /**
      * 提交操作
      *
@@ -233,6 +240,10 @@ class Client
      */
     public function commit()
     {
+        if ($this->commitMocked) {
+            return;
+        }
+
         $this->prepared = false;
 
         $bool = true;
