@@ -441,7 +441,7 @@ class Server
 
     protected function applyPrefix($path, $with_root = true)
     {
-        if ($path{0} !== '.') {
+        if ($path[0] !== '.') {
             $path = $this->prefix . ltrim($path, '\\/');
         }
         return $with_root ? $this->applyRoot($path) : $path;
