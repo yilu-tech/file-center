@@ -2,6 +2,8 @@
 
 namespace YiluTech\FileCenter;
 
+use Illuminate\Support\Arr;
+
 class Client
 {
     protected $history = array();
@@ -249,7 +251,7 @@ class Client
         $bool = true;
 
         foreach ($this->queue as $action => $items) {
-            if (!$this->{$action}(array_collapse($items))) {
+            if (!$this->{$action}(Arr::collapse($items))) {
                 $bool = false;
                 $this->rollback();
                 break;
@@ -276,7 +278,7 @@ class Client
         }
 
         foreach ($this->history as $action => $items) {
-            $this->exec($action, array_collapse($items));
+            $this->exec($action, Arr::collapse($items));
         }
 
         $this->history = [];
