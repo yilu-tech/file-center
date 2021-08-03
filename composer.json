@@ -1,12 +1,11 @@
 {
     "name": "yilu-tech/file-center",
     "description": "filesystem",
-    "license": "MIT",
     "type": "library",
     "authors": [
         {
-            "name": "yj",
-            "email": "yanjun@yilu-tech.com"
+            "name": "yilu",
+            "email": "developer@yilu.co"
         }
     ],
     "require": {

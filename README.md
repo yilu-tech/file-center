@@ -4,19 +4,6 @@
 
 ## 安装
 
-#### 添加源
-
-        "repositories": [
-            {
-                "type": "git",
-                "url": "git@share-git.yilu.works:yilu-tech/file-center.git"
-            },
-            {
-                "type": "git",
-                "url": "git@share-git.yilu.works:yilu-tech/micro-api.git"
-            }
-        ]
-
 #### 安装包
 
         composer require yilu-tech/file-center
